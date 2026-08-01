@@ -1,33 +1,52 @@
-from pandas import DataFrame
 import yfinance as yf
 from pathlib import Path
 
-
+# Directory to store raw downloaded data
 RAW_DATA_PATH = Path("data/raw")
-
 RAW_DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
-def downolad_stocks(tickers, start, end):
+def download_stocks(
+    tickers: list[str],
+    start: str,
+    end: str
+) -> dict[str, object]:
+    """
+    Downloads historical stock data from Yahoo Finance.
+
+    Args:
+        tickers: List of stock ticker symbols.
+        start: Start date (YYYY-MM-DD).
+        end: End date (YYYY-MM-DD).
+
+    Returns:
+        Dictionary where:
+            key   -> ticker symbol
+            value -> Pandas DataFrame
+    """
+
+    all_data = {}
 
     for ticker in tickers:
-        print(f'Downloading {ticker}...')
+
+        print(f"Downloading {ticker}...")
 
         df = yf.download(
-            tickers,
-            start = start,
-            end = end,
+            ticker,
+            start=start,
+            end=end,
             progress=False,
             auto_adjust=False
         )
-        path = RAW_DATA_PATH / f"{ticker}.csv"
 
-        df.to_csv(path)
+        if df.empty:
+            print(f"Failed to download {ticker}")
+            continue
 
-        print(f'Downloaded {ticker}')
+        df.to_csv(RAW_DATA_PATH / f"{ticker}.csv")
 
-    return df
+        all_data[ticker] = df
 
-# fn download_data(tokens: Vec<i32>,st: &str,en: &str) -> Vec<String> {
+        print(f"Downloaded {ticker}")
 
-# }
+    return all_data
