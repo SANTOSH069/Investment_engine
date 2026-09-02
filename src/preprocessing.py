@@ -1,32 +1,34 @@
 import pandas as pd
 
 
+def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Flatten Yahoo Finance’s MultiIndex columns to the standard OHLCV names."""
+    if not isinstance(df.columns, pd.MultiIndex):
+        return df
+
+    normalized_columns = []
+    for column in df.columns:
+        if isinstance(column, tuple):
+            normalized_columns.append(column[0])
+        else:
+            normalized_columns.append(column)
+
+    df = df.copy()
+    df.columns = normalized_columns
+    return df
+
+
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Cleans and preprocesses stock market data.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Raw stock market dataframe.
-
-    Returns
-    -------
-    pd.DataFrame
-        Cleaned dataframe.
-    """
 
     if df is None:
         raise ValueError("DataFrame is None.")
 
     if df.empty:
-        raise ValueError("Downloaded DataFrame is empty.")
+        raise ValueError("DataFrame is empty.")
 
+    df = _normalize_columns(df)
     df = df.drop_duplicates()
-
     df = df.sort_index()
-
-    df = df.dropna()
 
     required_columns = [
         "Open",
@@ -46,8 +48,6 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(
             f"Missing required columns: {missing}"
         )
-
-    df["Daily_Return"] = df["Close"].pct_change()
 
     df = df.dropna()
 

@@ -1,29 +1,33 @@
-import yfinance as yf
 from pathlib import Path
 
-# Directory to store raw downloaded data
+import pandas as pd
+import yfinance as yf
+
 RAW_DATA_PATH = Path("data/raw")
 RAW_DATA_PATH.mkdir(parents=True, exist_ok=True)
+
+
+def _flatten_yahoo_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if not isinstance(df.columns, pd.MultiIndex):
+        return df
+
+    flat_columns = []
+    for column in df.columns:
+        if isinstance(column, tuple):
+            flat_columns.append(column[0])
+        else:
+            flat_columns.append(column)
+
+    normalized = df.copy()
+    normalized.columns = flat_columns
+    return normalized
 
 
 def download_stocks(
     tickers: list[str],
     start: str,
-    end: str
+    end: str,
 ) -> dict[str, object]:
-    """
-    Downloads historical stock data from Yahoo Finance.
-
-    Args:
-        tickers: List of stock ticker symbols.
-        start: Start date (YYYY-MM-DD).
-        end: End date (YYYY-MM-DD).
-
-    Returns:
-        Dictionary where:
-            key   -> ticker symbol
-            value -> Pandas DataFrame
-    """
 
     all_data = {}
 
@@ -36,13 +40,14 @@ def download_stocks(
             start=start,
             end=end,
             progress=False,
-            auto_adjust=False
+            auto_adjust=False,
         )
 
         if df.empty:
             print(f"Failed to download {ticker}")
             continue
 
+        df = _flatten_yahoo_columns(df)
         df.to_csv(RAW_DATA_PATH / f"{ticker}.csv")
 
         all_data[ticker] = df
